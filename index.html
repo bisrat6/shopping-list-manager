@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Shopping List</title>
+      <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.2/css/all.min.css" integrity="sha512-1sCRPdkRXhBV2PBLUdRb4tMg1w2YPf37qatUFeS7zlBy7jJI8Lf4VHwWfZZfpXtYSLy85pkm9GaYVYMfw5BC1A==" crossorigin="anonymous" referrerpolicy="no-referrer">    <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+    <h1>🛒 My Shopping List</h1>
+    
+
+    <!-- form  -->
+     
+    <form class="add-item-section">
+        <input type="text" class="item-input" placeholder="Add new item..." maxlength="20" tabindex="1">
+
+        <!-- dropdown menu row  -->
+
+        <div class="quantity-category-row">
+            <div class="quantity-selector">
+                <input type="number" class="quantity-input" value="0" min="0" tabindex="2">
+                <select class="quantity-unit" tabindex="3">
+                    <option>Pcs</option>
+                    <option>Kg</option>
+                    <option>L</option>
+                    <option>Ml</option>
+                    <option>Pack</option>
+                </select>
+            </div>
+            <select class="category-selector" tabindex="4">
+                <option disabled selected>Category</option>
+                <option>Food</option>
+                <option>Household</option>
+                <option>Personal</option>
+                <option>Other</option>
+            </select>
+        </div>
+
+        <!-- submit button -->
+
+        <button type="submit" class="add-btn">
+            <i class="fa-solid fa-plus"></i>
+            Add item
+        </button>
+
+
+      </form>
+
+
+
+    <!-- filter input bar  -->
+
+
+    <div class="filter-buttons">
+      <button data-category="all" class="active">All</button>
+     <button data-category="Food">Food</button>
+     <button data-category="Household">Household</button>
+      <button data-category="Personal">Personal</button>
+      <button data-category="Other">Other</button>
+
+    </div>
+
+
+
+    <!-- filter buttons -->
+
+
+    <div class="filter" style="display: block;">
+        <input type="text" class="form-input-filter" id="filter" placeholder="Filter Items">
+      </div>  
+      
+      
+      <!-- item lists -->
+
+    <ul class="item-list">
+      <!-- <li class="item">
+        <span>Milk <small class="item-note">Qty. 2L</small></span>
+        <div class="category-tag">Food</div>
+        <div class="actions">
+           <button class="edit"><img src="./image/Group.svg" alt=""></button>
+          <button class="delete"><img src="./image/delete vector.svg" alt=""></button>
+        </div>
+      </li>
+      <li class="item">
+        <span>Laundry Detergent <small class="item-note">Qty. 2 pcs</small></span>
+        <div class="category-tag">Household</div>
+        <div class="actions">
+          <button class="edit"><img src="./image/Group.svg" alt=""></button>
+          <button class="delete"><img src="./image/delete vector.svg" alt=""></button>
+        </div>
+      </li> -->
+    </ul>
+    <p id="empty-message" class="empty-message">📝 Your shopping list is empty!</p>
+
+
+    <!-- clear button  -->
+
+    <button id="clear" class="btn-clear" style="display: block;">Clear All</button>
+
+    <div class="confirm">
+      <i class="fa-solid fa-triangle-exclamation"></i>
+      <h3>Are you sure you want to delete all items?</h3>
+      <div class="modal-buttons">
+       <button class="btn btn-confirm">Yes, Delete</button>
+        <button class="btn btn-cancel">Cancel</button>
+      </div>
+    </div>
+
+    <div class="message-box" id="duplicate-msg">
+        🚫 The item is already written!
+    </div>
+    <div class="overlay" id="overlay"></div>
+    <script src="script.js"></script>
+</body>
+</html>
