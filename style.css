@@ -152,8 +152,7 @@ h1, .add-btn, .filter-buttons button {
   font-size:15px;
 }
 .filter-buttons button:hover {
-    background: #4caf50;
-    color: white;
+    opacity:0.75;
 }  
 .filter-buttons .active {
   background: #4caf50;
@@ -236,6 +235,10 @@ h1, .add-btn, .filter-buttons button {
   border: none;
   cursor: pointer;
   padding: 0;
+   &:hover{
+    /* opacity:0.7; */
+    background-color:#f2f1f1;
+   }
         img{
             width:75%;
         }
@@ -253,9 +256,6 @@ h1, .add-btn, .filter-buttons button {
     border-radius: 5px;
     padding: 10px 20px;
     cursor: pointer;
-    &:hover{
-        background-color: #eeeeee;
-    }
 }
 
 
@@ -415,10 +415,6 @@ h1, .add-btn, .filter-buttons button {
     margin-right: 0.5rem;
     flex: 0 0 auto;    /* Keep buttons at their size, don’t shrink */
     white-space: nowrap;
-    &:focus{
-        background-color: #4caf50;
-        color: white;
-    }
   }
    
 }
