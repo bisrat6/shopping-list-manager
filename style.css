@@ -416,6 +416,9 @@ h1, .add-btn, .filter-buttons button {
     flex: 0 0 auto;    /* Keep buttons at their size, don’t shrink */
     white-space: nowrap;
   }
+  *:hover{
+    all:unset;
+  }
    
 }
 
