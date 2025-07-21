@@ -235,10 +235,6 @@ h1, .add-btn, .filter-buttons button {
   border: none;
   cursor: pointer;
   padding: 0;
-   &:hover{
-    /* opacity:0.7; */
-    background-color:#f2f1f1;
-   }
         img{
             width:75%;
         }
@@ -256,6 +252,9 @@ h1, .add-btn, .filter-buttons button {
     border-radius: 5px;
     padding: 10px 20px;
     cursor: pointer;
+    &:hover{
+        background-color: #eeeeee;
+    }
 }
 
 
@@ -308,7 +307,7 @@ h1, .add-btn, .filter-buttons button {
   z-index: 9999;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.2s ease, visibility 0.3s ease;
+  transition: opacity 0.1s ease, visibility 0.1s ease;
   i{
     color:rgb(255, 187, 0);
     font-size:40px;
@@ -363,7 +362,7 @@ h1, .add-btn, .filter-buttons button {
   
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease, visibility 0.3s ease;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
   pointer-events: none; /* disables clicks when hidden */
   backdrop-filter: blur(1px);
   pointer-events: auto;
@@ -415,6 +414,17 @@ h1, .add-btn, .filter-buttons button {
     margin-right: 0.5rem;
     flex: 0 0 auto;    /* Keep buttons at their size, don’t shrink */
     white-space: nowrap;
+  }
+  .item span{
+    font-size:16px;
+  }
+  .item-note{
+    font-size:0.7rem;
+  }
+  .message-box {
+    padding: 10px 10px;
+    font-size: 13px;
+    max-width: 470px;
   }
    
 }
