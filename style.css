@@ -52,7 +52,7 @@ h1, .add-btn, .filter-buttons button {
  display: flex;
  flex-direction: column;
  gap: 15px;
- margin-bottom: 25px;
+ margin: 20px 10px;
  background-color: var(--light-gray);
  padding: 15px;
  border-radius: 8px;
@@ -103,7 +103,7 @@ h1, .add-btn, .filter-buttons button {
         
 .category-selector {
  flex: 1;
- padding: 12px;
+ padding: 8px;
  border: 1px solid var(--medium-gray);
  border-radius: 6px;
  background-color: white;
@@ -134,21 +134,22 @@ h1, .add-btn, .filter-buttons button {
 /* filter buttons  */
 .filter-buttons {
   display: flex;
-  justify-content: space-between;
-  margin: 1rem 0;
-  flex-wrap: wrap;
   gap: 0.5rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 .filter-buttons button {
-  width:fit-content;
-  flex: 1;
+  flex:1;
   padding: 0.5rem;
   border: none;
   border-radius: 8px;
   background: #eee;
   cursor: pointer;
-  font-weight: 500;
-  font-size:16px;
+  font-weight: 600;
+  font-size:15px;
 }
 .filter-buttons button:hover {
     background: #4caf50;
@@ -191,6 +192,7 @@ h1, .add-btn, .filter-buttons button {
   gap: 0.8rem;
   transition: all 0.3s ease;
   opacity: 1;
+  overflow-x: hidden;
 }
 .item.entering {
   opacity: 0;
@@ -235,7 +237,7 @@ h1, .add-btn, .filter-buttons button {
   cursor: pointer;
   padding: 0;
         img{
- width:70%;
+            width:75%;
         }
 }
 
@@ -394,11 +396,26 @@ h1, .add-btn, .filter-buttons button {
          width:100%;
    }
    h1{
-    font-size:2rem;
+    font-size:1.5rem;
    }
-   .filter-buttons button{
-    font-size:14px;
+   .item-input,.quantity-category-row,.add-btn {
+    height: 40px;
+    font-size: 16px;
    }
+   .category-tag{
+    font-size:0.8rem;
+   }
+     .filter-buttons {
+    overflow-x: auto;
+    flex-wrap: nowrap; /* Prevent wrapping */
+  }
 
+  .filter-buttons button{
+    padding:0.4rem 1.2rem;
+    margin-right: 0.5rem;
+    flex: 0 0 auto;    /* Keep buttons at their size, don’t shrink */
+    white-space: nowrap;
+  }
+   
 }
 
