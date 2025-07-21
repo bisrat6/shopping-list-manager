@@ -415,9 +415,10 @@ h1, .add-btn, .filter-buttons button {
     margin-right: 0.5rem;
     flex: 0 0 auto;    /* Keep buttons at their size, don’t shrink */
     white-space: nowrap;
-  }
-  *:hover{
-    all:unset;
+    &:focus{
+        background-color: #4caf50;
+        color: white;
+    }
   }
    
 }
