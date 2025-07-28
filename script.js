@@ -1,322 +1,330 @@
-const formBtn=document.querySelector('.add-item-section');
-const clearBtn=document.querySelector('.btn-clear');
-const ul=document.querySelector('.item-list');
-const filterInput=document.querySelector('#filter');
-const deleteBtn=document.querySelector('.btn-confirm');
-const cancelBtn=document.querySelector('.btn-cancel');
-const filterBtn=document.querySelector('.filter-buttons');
-let isEditMode=false;
-let currentItem=null;
-function Item(name,quantity,category){
-        this.name=name;
-        this.quantity=quantity;
-        this.category=category
+// Cache DOM elements for better performance
+const DOM = {
+    form: document.querySelector('.add-item-section'),
+    clearBtn: document.querySelector('.btn-clear'),
+    ul: document.querySelector('.item-list'),
+    filterInput: document.querySelector('#filter'),
+    deleteBtn: document.querySelector('.btn-confirm'),
+    cancelBtn: document.querySelector('.btn-cancel'),
+    filterBtn: document.querySelector('.filter-buttons'),
+    itemInput: document.querySelector('.item-input'),
+    quantityInput: document.querySelector('.quantity-input'),
+    quantityUnit: document.querySelector('.quantity-unit'),
+    categorySelector: document.querySelector('.category-selector'),
+    addBtn: document.querySelector('.add-btn'),
+    filterSection: document.querySelector('.filter'),
+    clearSection: document.querySelector('#clear'),
+    emptyMessage: document.getElementById('empty-message'),
+    confirmModal: document.querySelector('.confirm'),
+    overlay: document.querySelector('.overlay'),
+    duplicateMsg: document.getElementById('duplicate-msg')
+};
+
+// Application state
+const appState = {
+    isEditMode: false,
+    currentItem: null,
+    items: new Map() // Use Map for O(1) lookups
+};
+
+// Item constructor
+function Item(name, quantity, category) {
+    this.name = name;
+    this.quantity = quantity;
+    this.category = category === 'Category' || !category ? 'Other' : category;
 }
 
-function hide(){
-document.querySelector('.confirm').classList.remove('visible');
-document.querySelector('.overlay').style.visibility = 'hidden';
-document.querySelector('.overlay').style.opacity = '0';
-}
+// Utility functions
+const utils = {
+    hide() {
+        DOM.confirmModal.classList.remove('visible');
+        DOM.overlay.style.visibility = 'hidden';
+        DOM.overlay.style.opacity = '0';
+    },
 
-function checkDuplicateItems(input){
-    const items=document.querySelectorAll('.item');
+    // Optimized duplicate check using Map
+    checkDuplicateItems(input) {
+        const normalizedInput = input.toLowerCase().trim();
+        return appState.items.has(normalizedInput);
+    },
 
-    for(let li of items){
-        if(li.querySelector('span').firstChild.textContent.trim().toLowerCase()==input.toLowerCase())return true;
+    showDuplicateMessage() {
+        DOM.duplicateMsg.classList.add('show');
+        setTimeout(() => DOM.duplicateMsg.classList.remove('show'), 2000);
+    },
+
+    // Debounced filter function for better performance
+    debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    },
+
+    parseQuantity(text) {
+        const clean = text.replace("Qty.", "").trim();
+        const match = clean.match(/^(\d+(?:\.\d+)?)([a-zA-Z]+)$/);
+        return match ? [match[1], match[2]] : [null, null];
+    },
+
+    // Optimized DOM creation using template literals and fragment
+    createItemElement(item) {
+        const template = `
+            <span>${item.name}<small class="item-note">Qty. ${item.quantity}</small></span>
+            <div class="category-tag">${item.category}</div>
+            <div class="actions">
+                <button class="edit" title="Edit item">${document.getElementById('edit-icon').outerHTML}</button>
+                <button class="delete" title="Delete item">${document.getElementById('delete-icon').outerHTML}</button>
+            </div>
+        `;
+        
+        const li = document.createElement('li');
+        li.className = 'item';
+        li.innerHTML = template;
+        return li;
     }
-    return false;
-}
+};
 
-function showDuplicateMessage() {
-  const msgBox = document.getElementById('duplicate-msg');
-  msgBox.classList.add('show');
-
-  setTimeout(() => {
-    msgBox.classList.remove('show');
-  }, 2000);
-}
-
-function isItem(){
-    if(ul.childElementCount==0){
-        document.querySelector(".filter").style.display="none";
-        document.querySelector("#clear").style.display="none";
-        document.getElementById('empty-message').classList.remove('hidden');
-        document.querySelectorAll('.filter-buttons button').forEach(btn =>{
-            if(btn.textContent=='All'){
-                btn.classList.add('active');
-            }else{
-                btn.classList.remove('active')
+// Main application functions
+const app = {
+    updateUIState() {
+        const hasItems = DOM.ul.childElementCount > 0;
+        
+        // Batch DOM updates
+        const updates = [
+            [DOM.filterSection, 'style.display', hasItems ? 'block' : 'none'],
+            [DOM.clearSection, 'style.display', hasItems ? 'block' : 'none'],
+            [DOM.emptyMessage, 'classList', hasItems ? 'add' : 'remove', 'hidden']
+        ];
+        
+        updates.forEach(([element, property, value, action]) => {
+            if (property.includes('.')) {
+                const [obj, prop] = property.split('.');
+                element[obj][prop] = value;
+            } else if (action) {
+                element[property][action](value);
             }
         });
-    }
-    else{
-        document.querySelector(".filter").style.display="block";
-        document.querySelector("#clear").style.display="block";
-        document.getElementById('empty-message').classList.add('hidden');
-    }
-}
 
-
-
-function clearItems(){
-    const items=document.querySelectorAll('.item');
-    items.forEach((item)=>{
-        item.remove();
-    });
-    localStorage.removeItem('items'); 
-    isItem();
-    exitEditMode();
-}
-
-function addItem(event){
-
-    const name=document.querySelector('.item-input').value.trim();
-    const quantity=document.querySelector('.quantity-input').value + document.querySelector('.quantity-unit').value;
-    const category=document.querySelector('.category-selector').value;
-    const item=new Item(name,quantity,category);
-
-    if (!name)return;
-
-    
-    if (isEditMode){
-        removeItemsFromLocalStorage(currentItem.firstElementChild.firstChild.textContent.trim());
-        currentItem.remove();
-    }else{
-        if(checkDuplicateItems(name)){
-            showDuplicateMessage();
-            return;
+        // Reset filter buttons
+        if (!hasItems) {
+            document.querySelectorAll('.filter-buttons button').forEach(btn => {
+                btn.classList.toggle('active', btn.textContent === 'All');
+            });
         }
-    }
+    },
 
-    addItemsToDOM(item);
-    addItemsToLocalStorage(item);
-    document.querySelector('.item-input').value="";
-    document.querySelector('.quantity-input').value='0';
-    document.querySelector('.category-selector').value='Category';
-}
-function addItemsToDOM(item){
-    const ul=document.querySelector('.item-list');
-    const li=document.createElement('li');
-    const span=document.createElement('span');
-    const div=document.createElement('div');
-    const div2=document.createElement('div');
-    const button=document.createElement('button');
-    const button2=document.createElement('button');
-    const small=document.createElement('small');
-    const img1=document.createElement('img');
-    const img2=document.createElement('img');
-    const itemName=document.createTextNode(item.name);
-    const itemQuantity=document.createTextNode(`Qty. ${item.quantity}`);
+    clearItems() {
+        // Use DocumentFragment for batch removal
+        const items = [...document.querySelectorAll('.item')];
+        items.forEach(item => item.remove());
+        
+        localStorage.removeItem('items');
+        appState.items.clear();
+        this.updateUIState();
+        this.exitEditMode();
+    },
 
-    item.category = (item.category === 'Category' || !item.category) ? 'Other' : item.category;
+    addItem() {
+        const name = DOM.itemInput.value.trim();
+        const quantity = DOM.quantityInput.value + DOM.quantityUnit.value;
+        const category = DOM.categorySelector.value;
+        
+        if (!name) return;
 
-    const itemCategory= document.createTextNode(item.category);
+        const item = new Item(name, quantity, category);
+        const normalizedName = name.toLowerCase();
 
-    li.className='item';
-    small.className='item-note';
-    div.className='category-tag';
-    div2.className='actions';
-    button.className='edit';
-    button2.className='delete';
-    img1.src="./image/Group.svg";
-    img2.src="./image/delete vector.svg";
-
-    button.append(img1);
-    button2.append(img2);
-    div2.append(button);
-    div2.append(button2);
-    div.append(itemCategory);
-    small.append(itemQuantity);
-    span.append(itemName);
-    span.append(small);
-
-    li.append(span);
-    li.append(div);
-    li.append(div2);
-
-    ul.append(li);
-
-    li.classList.add('entering');
-    setTimeout(() => li.classList.remove('entering'), 100);
-
-    isItem();
-}
-
-
-function addItemsToLocalStorage(item){
-    let itemsArray;
-    if(localStorage.getItem('items')===null){
-        itemsArray=[];
-    }else{
-        itemsArray=JSON.parse(localStorage.getItem('items'));
-    }
-    itemsArray.push(item);
-
-    localStorage.setItem('items',JSON.stringify(itemsArray));
-}
-
-
-function removeItemsFromLocalStorage(removedItem){
-    itemsArray=JSON.parse(localStorage.getItem('items'));
-    itemsArray=itemsArray.filter(item=>item.name!==removedItem);
-    localStorage.setItem('items',JSON.stringify(itemsArray));
-}
-
-function loadItems(){
-    const store=localStorage.getItem('items');
-    let tempStore;
-    if(store){
-        tempStore=JSON.parse(store);
-        tempStore.forEach((item)=>addItemsToDOM(item));
-    }
-}
-function filter(){
-    const items=document.querySelectorAll('.item');
-    const value=filterInput.value.toLowerCase();
-    const buttons=document.querySelectorAll('.filter-buttons button');
-    let state;
-    buttons.forEach((button)=>{
-        if(button.classList.contains('active')){
-             state=button.textContent.trim();
+        if (appState.isEditMode) {
+            const oldName = appState.currentItem.firstElementChild.firstChild.textContent.trim().toLowerCase();
+            appState.items.delete(oldName);
+            appState.currentItem.remove();
+        } else {
+            if (utils.checkDuplicateItems(name)) {
+                utils.showDuplicateMessage();
+                return;
+            }
         }
-    });
-    items.forEach((item)=>{
-        let itemName=item.firstElementChild.childNodes[0].textContent.toLowerCase();
-        if((item.querySelector('.category-tag').textContent.trim()===state || state=='All') && itemName.includes(value)){
-             item.style.display='flex';
+
+        this.addItemToDOM(item);
+        this.addItemToStorage(item);
+        appState.items.set(normalizedName, item);
+        this.resetForm();
+    },
+
+    addItemToDOM(item) {
+        const li = utils.createItemElement(item);
+        DOM.ul.appendChild(li);
+
+        // Optimized animation
+        li.classList.add('entering');
+        requestAnimationFrame(() => {
+            li.classList.remove('entering');
+        });
+
+        this.updateUIState();
+    },
+
+    addItemToStorage(item) {
+        let itemsArray = JSON.parse(localStorage.getItem('items') || '[]');
+        itemsArray.push(item);
+        localStorage.setItem('items', JSON.stringify(itemsArray));
+    },
+
+    removeItemFromStorage(removedItem) {
+        let itemsArray = JSON.parse(localStorage.getItem('items') || '[]');
+        itemsArray = itemsArray.filter(item => item.name !== removedItem);
+        localStorage.setItem('items', JSON.stringify(itemsArray));
+    },
+
+    loadItems() {
+        const store = localStorage.getItem('items');
+        if (store) {
+            const items = JSON.parse(store);
+            // Use document fragment for batch insertion
+            const fragment = document.createDocumentFragment();
+            
+            items.forEach(item => {
+                const li = utils.createItemElement(item);
+                fragment.appendChild(li);
+                appState.items.set(item.name.toLowerCase(), item);
+            });
+            
+            DOM.ul.appendChild(fragment);
+            this.updateUIState();
         }
-        else item.style.display='none';
-    });
+    },
 
-}
+    // Optimized filter with early exit and batch updates
+    filter() {
+        const items = DOM.ul.children;
+        const value = DOM.filterInput.value.toLowerCase();
+        const activeCategory = document.querySelector('.filter-buttons button.active')?.textContent.trim() || 'All';
+        
+        // Use array methods for better performance
+        Array.from(items).forEach(item => {
+            const itemName = item.firstElementChild.childNodes[0].textContent.toLowerCase();
+            const itemCategory = item.querySelector('.category-tag').textContent.trim();
+            const matchesCategory = activeCategory === 'All' || itemCategory === activeCategory;
+            const matchesFilter = itemName.includes(value);
+            
+            item.style.display = (matchesCategory && matchesFilter) ? 'flex' : 'none';
+        });
+    },
 
-function onEditMode(item){
-    if(currentItem){
-        currentItem.style["pointer-events"]='auto';
+    onEditMode(button) {
+        if (appState.currentItem) {
+            appState.currentItem.style.pointerEvents = 'auto';
+        }
+
+        appState.isEditMode = true;
+        appState.currentItem = button.closest('li');
+        
+        // Clear previous edit modes
+        document.querySelectorAll('.item').forEach(i => i.classList.remove('edit-mode'));
+        
+        appState.currentItem.style.pointerEvents = 'none';
+        appState.currentItem.classList.add('edit-mode');
+        
+        // Populate form
+        DOM.itemInput.value = appState.currentItem.firstElementChild.firstChild.textContent.trim();
+        const quantityText = appState.currentItem.querySelector('.item-note')?.textContent;
+        const [qty, unit] = utils.parseQuantity(quantityText);
+        
+        DOM.quantityInput.value = qty || '0';
+        DOM.quantityUnit.value = unit || 'Pcs';
+        DOM.categorySelector.value = appState.currentItem.querySelector('.category-tag').textContent.trim();
+        
+        DOM.addBtn.innerHTML = '<span style="font-size: 14px;">✏️</span> Update Item';
+        DOM.addBtn.style.backgroundColor = '#3b4cba';
+    },
+
+    exitEditMode() {
+        appState.isEditMode = false;
+        appState.currentItem?.classList.remove('edit-mode');
+        appState.currentItem = null;
+        
+        DOM.addBtn.innerHTML = '<span class="icon-plus">+</span> Add Item';
+        DOM.addBtn.style.backgroundColor = '#4CAF50';
+        this.resetForm();
+    },
+
+    resetForm() {
+        DOM.itemInput.value = '';
+        DOM.quantityInput.value = '0';
+        DOM.categorySelector.value = 'Category';
+    },
+
+    handleItemClick(event) {
+        const deleteBtn = event.target.closest('.delete');
+        const editBtn = event.target.closest('.edit');
+        
+        if (deleteBtn) {
+            this.removeFromDOM(deleteBtn);
+        } else if (editBtn) {
+            this.onEditMode(editBtn);
+        }
+    },
+
+    removeFromDOM(button) {
+        const li = button.closest('li');
+        const itemName = li.querySelector('span').firstChild.textContent.trim();
+        
+        li.remove();
+        appState.items.delete(itemName.toLowerCase());
+        this.removeItemFromStorage(itemName);
+        this.updateUIState();
+    },
+
+    handleCategoryFilter(event) {
+        if (event.target.tagName !== 'BUTTON' || DOM.ul.childElementCount === 0) return;
+
+        // Update active state
+        document.querySelectorAll('.filter-buttons button').forEach(btn =>
+            btn.classList.remove('active')
+        );
+        event.target.classList.add('active');
+
+        // Apply filter
+        this.filter();
     }
-    isEditMode=true;
-    const inputBar=document.querySelector('.item-input');
-    const quantityInputBar=document.querySelector('.quantity-input');
-    const quantityUnitSelector=document.querySelector('.quantity-unit');
-    const categorySelector=document.querySelector('.category-selector');
+};
 
-
-
-
-    document.querySelectorAll('.item').forEach(i=>{
-        i.classList.remove('edit-mode');
-    });
-
-    
-    currentItem=item.closest('li');
-    currentItem.style["pointer-events"]='none';
-    currentItem.classList.add('edit-mode');
-    inputBar.value=currentItem.firstElementChild.firstChild.textContent.trim();
-    const quantityText = currentItem.querySelector('.item-note')?.textContent;
-    const quantity = parseQuantity(quantityText);
-    quantityInputBar.value=quantity[0];
-    quantityUnitSelector.value=quantity[1];
-    categorySelector.value=currentItem.querySelector('.category-tag').textContent.trim();
-    document.querySelector('.add-btn').innerHTML=`<i class="fa-solid fa-pen-to-square"></i> Update Item`;
-    document.querySelector('.add-btn').style.backgroundColor='#3b4cba';
-}
-
-
-
-function parseQuantity(text) {
-
-  const clean = text.replace("Qty.", "").trim();
-
-  const match = clean.match(/^(\d+(?:\.\d+)?)([a-zA-Z]+)$/);
-
-  if (match) {
-    return [match[1], match[2]]; 
-  } else {
-    return [null, null];
-  }
-}
-
-function exitEditMode(){
-    isEditMode=false;
-    document.querySelector('.add-btn').innerHTML=`<i class="fa-solid fa-plus"></i> Add Item`
-    if(currentItem){
-        currentItem.classList.remove('edit-mode');
-        currentItem=null;
-    }
-    document.querySelector('.item-input').value="";
-    document.querySelector('.add-btn').style.backgroundColor='#4CAF50';
-}
-
-function onClick(event){
-    const deleteBtn=event.target.closest('.delete');
-    const editBtn=event.target.closest('.edit');
-    if(deleteBtn){
-        removeFromDOM(deleteBtn);
-    }else if(editBtn){
-        onEditMode(editBtn);
-    }
-}
-
-function removeFromDOM(item){
-    const li=item.closest('li');
-    li.remove();
-    removeItemsFromLocalStorage(li.querySelector('span').firstChild.textContent);
-    isItem();
-}
-
-
-
-function filterFun(event){
-    if (event.target.tagName !== 'BUTTON' || ul.childElementCount==0) return;
-
-  document.querySelectorAll('.filter-buttons button').forEach(btn =>
-    btn.classList.remove('active')
-  );
-
-  event.target.classList.add('active');
-
-  const selectedCategory = event.target.dataset.category;
-
-  document.querySelectorAll('.item').forEach(item => {
-    const tag = item.querySelector('.category-tag').textContent.trim().toLowerCase();
-    if (selectedCategory === 'all' || tag === selectedCategory.toLowerCase()) {
-      item.style.display = 'flex';
-    } else {
-      item.style.display = 'none';
-    }
-  });
-}
-
-
-clearBtn.addEventListener('click',()=>{
-    document.querySelector('.confirm').classList.add('visible');
-  document.querySelector('.overlay').style.visibility = 'visible'; 
-  document.querySelector('.overlay').style.opacity = '1';
-
+// Event listeners with optimized handlers
+DOM.clearBtn.addEventListener('click', () => {
+    DOM.confirmModal.classList.add('visible');
+    DOM.overlay.style.visibility = 'visible';
+    DOM.overlay.style.opacity = '1';
 });
 
-deleteBtn.addEventListener('click',()=>{
-    clearItems();
-    hide();
+DOM.deleteBtn.addEventListener('click', () => {
+    app.clearItems();
+    utils.hide();
 });
-cancelBtn.addEventListener('click',hide);
 
-formBtn.addEventListener('submit',(event)=>{
+DOM.cancelBtn.addEventListener('click', utils.hide);
+
+DOM.form.addEventListener('submit', (event) => {
     event.preventDefault();
-    if(!isEditMode)addItem();
-    else{
-        // const input=document.querySelector('.item-input').value;
-        addItem();
-        exitEditMode();
+    app.addItem();
+    if (appState.isEditMode) {
+        app.exitEditMode();
     }
 });
-filterInput.addEventListener('input',filter);
 
-filterBtn.addEventListener('click',filterFun);
+// Debounced filter for better performance
+DOM.filterInput.addEventListener('input', utils.debounce(() => app.filter(), 150));
 
-ul.addEventListener('click',onClick);
+DOM.filterBtn.addEventListener('click', (event) => app.handleCategoryFilter(event));
 
+// Event delegation for better performance
+DOM.ul.addEventListener('click', (event) => app.handleItemClick(event));
 
-isItem();
-loadItems();
+// Initialize app
+app.updateUIState();
+app.loadItems();
